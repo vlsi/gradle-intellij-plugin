@@ -24,6 +24,7 @@ class IntelliJPluginExtension {
     // turning it off disables configuring dependencies to intellij sdk jars automatically,
     // instead the intellij, intellijPlugin and intellijPlugins functions could be used for an explicit configuration
     boolean configureDefaultDependencies = true
+    boolean dependenciesOnly = false
     // configure extra dependency artifacts from intellij repo
     // the dependencies on them could be configured only explicitly using intellijExtra function in the dependencies block
     Object[] extraDependencies = []

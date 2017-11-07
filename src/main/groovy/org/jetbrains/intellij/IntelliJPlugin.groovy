@@ -48,15 +48,14 @@ class IntelliJPlugin implements Plugin<Project> {
 
     @Override
     void apply(Project project) {
-        def javaPlugin = project.getPlugins().apply(JavaPlugin)
         def intellijExtension = project.extensions.create(EXTENSION_NAME, IntelliJPluginExtension) as IntelliJPluginExtension
         intellijExtension.with {
             pluginName = project.name
             sandboxDirectory = new File(project.buildDir, DEFAULT_SANDBOX).absolutePath
             downloadSources = !System.getenv().containsKey('CI')
         }
-        configureConfigurations(project, javaPlugin)
-        configureTasks(project, intellijExtension)
+        assert !project.state.executed : "afterEvaluate is a no-op for an executed project"
+        project.afterEvaluate { configureProjectAfterEvaluate(it, intellijExtension) }
     }
 
     private static void configureConfigurations(@NotNull Project project, @NotNull JavaPlugin javaPlugin) {
@@ -73,21 +72,24 @@ class IntelliJPlugin implements Plugin<Project> {
 
     private static def configureTasks(@NotNull Project project, @NotNull IntelliJPluginExtension extension) {
         LOG.info("Configuring IntelliJ IDEA gradle plugin")
-        configurePatchPluginXmlTask(project, extension)
-        configurePrepareSandboxTasks(project, extension)
-        configurePluginVerificationTask(project)
-        configureRunIdeaTask(project, extension)
-        configureBuildPluginTask(project)
-        configurePublishPluginTask(project, extension)
-        configureProcessResources(project)
-        configureInstrumentation(project, extension)
+        if (!extension.dependenciesOnly) {
+            configurePatchPluginXmlTask(project, extension)
+            configurePrepareSandboxTasks(project, extension)
+            configurePluginVerificationTask(project)
+            configureRunIdeaTask(project, extension)
+            configureBuildPluginTask(project)
+            configurePublishPluginTask(project, extension)
+            configureProcessResources(project)
+            configureInstrumentation(project, extension)
+        }
         configureDependencyExtensions(project, extension)
-        assert !project.state.executed : "afterEvaluate is a no-op for an executed project"
-        project.afterEvaluate { configureProjectAfterEvaluate(it, extension) }
     }
 
     private static void configureProjectAfterEvaluate(@NotNull Project project,
                                                       @NotNull IntelliJPluginExtension extension) {
+        def javaPlugin = project.getPlugins().apply(JavaPlugin)
+        configureConfigurations(project, javaPlugin)
+        configureTasks(project, extension)
         for (def subproject : project.subprojects) {
             def subprojectExtension = subproject.extensions.findByType(IntelliJPluginExtension)
             if (subprojectExtension) {
@@ -97,7 +99,9 @@ class IntelliJPlugin implements Plugin<Project> {
 
         configureIntellijDependency(project, extension)
         configurePluginDependencies(project, extension)
-        configureTestTasks(project, extension)
+        if (!extension.dependenciesOnly) {
+            configureTestTasks(project, extension)
+        }
     }
 
     private static void configureDependencyExtensions(@NotNull Project project,
