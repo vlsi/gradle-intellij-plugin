@@ -16,6 +16,7 @@ import org.gradle.api.tasks.bundling.Zip
 import org.gradle.api.tasks.compile.AbstractCompile
 import org.gradle.api.tasks.testing.Test
 import org.gradle.internal.jvm.Jvm
+import org.gradle.internal.os.OperatingSystem
 import org.gradle.jvm.tasks.Jar
 import org.gradle.language.jvm.tasks.ProcessResources
 import org.gradle.tooling.BuildException
@@ -314,6 +315,7 @@ class IntelliJPlugin implements Plugin<Project> {
             task.conventionMapping.map("ideaDirectory", { Utils.ideaSdkDirectory(extension) })
             task.conventionMapping.map("systemProperties", { extension.systemProperties })
             task.conventionMapping.map("requiredPluginIds", { Utils.getPluginIds(project) })
+            task.conventionMapping.map("shortenClasspathWithManifestJar", { OperatingSystem.current().isWindows() })
             task.conventionMapping.map("configDirectory", {
                 (project.tasks.findByName(PREPARE_SANDBOX_TASK_NAME) as PrepareSandboxTask).getConfigDirectory()
             })

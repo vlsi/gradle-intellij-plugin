@@ -1,11 +1,16 @@
 package org.jetbrains.intellij.tasks
 
-
+import org.gradle.api.file.FileCollection
 import org.gradle.api.tasks.*
 import org.gradle.internal.jvm.Jvm
 import org.gradle.internal.os.OperatingSystem
 import org.gradle.util.CollectionUtils
 import org.jetbrains.intellij.Utils
+
+import java.util.jar.Attributes
+import java.util.jar.JarOutputStream
+import java.util.jar.Manifest
+import java.util.zip.ZipEntry
 
 class RunIdeTask extends JavaExec {
     private static final def PREFIXES = [IU: null,
@@ -30,6 +35,7 @@ class RunIdeTask extends JavaExec {
     private Object systemDirectory
     private Object pluginsDirectory
     private Object jbreVersion
+    private boolean shortenClasspathWithManifestJar
 
     List<String> getRequiredPluginIds() {
         CollectionUtils.stringize(requiredPluginIds.collect {
@@ -44,6 +50,18 @@ class RunIdeTask extends JavaExec {
 
     void requiredPluginIds(Object... requiredPluginIds) {
         this.requiredPluginIds.addAll(requiredPluginIds as List)
+    }
+
+    boolean getShortenClasspathWithManifestJar() {
+        shortenClasspathWithManifestJar
+    }
+
+    void setShortenClasspathWithManifestJar(Object shortenClasspathWithManifestJar) {
+        this.shortenClasspathWithManifestJar = shortenClasspathWithManifestJar
+    }
+
+    void shortenClasspathWithManifestJar(Object shortenClasspathWithManifestJar) {
+        this.jbreVersion = jbreVersion
     }
 
     @Input
@@ -144,6 +162,10 @@ class RunIdeTask extends JavaExec {
                 "$ideaDirectory/lib/trove4j.jar",
                 "$ideaDirectory/lib/jdom.jar",
                 "$ideaDirectory/lib/log4j.jar")
+
+        if (getShortenClasspathWithManifestJar()) {
+            classpath = project.files(createManifestJar(classpath))
+        }
     }
 
     def configureSystemProperties() {
@@ -187,5 +209,22 @@ class RunIdeTask extends JavaExec {
 
     def configureJvmArgs() {
         jvmArgs = Utils.getIdeaJvmArgs(this, getJvmArgs(), getIdeaDirectory())
+    }
+
+    private File createManifestJar(FileCollection classpath) {
+        def file = new File(getTemporaryDir(), "manifest.jar")
+        def manifest = new Manifest()
+        def attributes = manifest.getMainAttributes()
+        attributes.put(Attributes.Name.MANIFEST_VERSION, '1.0')
+        attributes.put(Attributes.Name.CLASS_PATH, classpath.files.collect { it.toURI().toString() }.join(' '))
+        def outputStream = null
+        try {
+            outputStream = new JarOutputStream(new FileOutputStream(file), manifest)
+            outputStream.putNextEntry(new ZipEntry("META-INF/"))
+            return file
+        }
+        finally {
+            outputStream?.close()
+        }
     }
 }
