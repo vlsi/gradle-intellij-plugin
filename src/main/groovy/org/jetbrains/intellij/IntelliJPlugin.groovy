@@ -68,7 +68,6 @@ class IntelliJPlugin implements Plugin<Project> {
         intellijExtension.with {
             pluginName = project.name
             sandboxDirectory = new File(project.buildDir, DEFAULT_SANDBOX).absolutePath
-            downloadSources = !System.getenv().containsKey('CI')
         }
         configureConfigurations(project)
         configureTasks(project, intellijExtension)
