@@ -84,7 +84,7 @@ abstract class IntelliJPluginSpecBase {
 
     protected fun build(vararg tasks: String): BuildResult = build(false, *tasks)
 
-    protected fun build(fail: Boolean, vararg tasks: String): BuildResult = build("6.6", fail, *tasks)
+    protected fun build(fail: Boolean, vararg tasks: String): BuildResult = build("5.1", fail, *tasks)
 
     protected fun build(gradleVersion: String, fail: Boolean = false, vararg tasks: String): BuildResult =
         builder(gradleVersion, *tasks).run {
